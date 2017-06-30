@@ -1,0 +1,317 @@
+---
+title: 'Challenge II: Spatial continuity and weather prediction'
+author:
+- "Olivier Niklaus, Geography UZH"
+- "Merlin Unterfinger, Geography UZH"
+date: 25 6 2017
+output:
+  rmarkdown::pdf_document:
+    fig_caption: yes        
+    includes:  
+      in_header: preamble-latex.tex
+    number_sections: yes
+    toc: yes
+    toc_depth: 3
+#    citation_package: natbib
+  html_document: default
+#biblio-style: "apalike"
+#link-citations: true
+#csl: apa.csl
+#bibliography: References.bib
+#abstract: "blablabalbalbalbalbalbalbalbalbalaalbalbla"
+filter: pandoc-eqnos
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+rm(list=ls())             # Clean the environment
+options(scipen=6)         # Display digits, not the scientific version
+options(digits.secs=6)    # use milliseconds in Date/Time data types
+options(warning=FALSE)    # Don't show warnings
+par(mfrow=c(1,1))         # reset plot placement to normal 1 by 1
+
+dataFolder    <- file.path(getwd(), "data")            # Data folder
+figureFolder  <- file.path(getwd(), "figures")         # Figure Folder
+```
+
+\newpage
+
+# Libraries
+The following libraries are needed, to execute the code:
+
+* **ggplot2** -- Plots -- [@ggplot2]
+* **plyr** -- Splitting, applying and combining data -- [@plyr]
+* **rgdal** -- Open Shapefiles -- [@rgdal]
+* **sp** -- Spatial datatypes -- [@sp2; @sp1]
+* **gstat** -- Spatial statistics --[@gstat]
+* **FNN** -- Spatial statistics --[@FNN]
+
+
+```{r Libraries, message=FALSE, echo=FALSE}
+#library(e1071)            # Support Vector Machine library
+library(sp)               # Spatial data types
+#library(rgeos)            # Geoprocessing
+library(rgdal)            # Open Shapefiles
+library(ggplot2)          # Plots
+library(gdistance)        # Least cost path - Walking time
+#library(rasterVis)        # Plots of rasters
+library(plyr)
+#spatial statistics library
+#install.packages("gstat")
+library(gstat)
+#install.packages("FNN")
+library(FNN)
+#install.packages("spdep")
+library(spdep)
+
+```
+
+# Data
+```{r Geodata, message=FALSE, warning=FALSE , echo=FALSE, fig.height=3, fig.align="center"}
+# Define CRS
+WGS84 <- CRS("+init=epsg:4326")
+
+# Read CSV file for temperature
+temp <- read.csv(file.path(dataFolder, "temperature.csv"))
+temp <- temp[complete.cases(temp), ]
+coordinates(temp)<-~long+lat
+proj4string(temp)<-WGS84
+
+# Read test file
+temp.test <- read.csv(file.path(dataFolder, "temperature_test.csv"))
+coordinates(temp.test) <- ~long+lat
+proj4string(temp.test) <- WGS84
+
+plot(temp)
+points(temp.test, col="red")
+knitr::kable(head(round(as.data.frame(head(temp)),2), caption = "Structure of the temperature data set.", row.names = FALSE))
+
+# Seperate data according to timeFrame and season
+temp1970w <-SpatialPointsDataFrame(coords = temp@coords, data = temp@data[,1:2])
+temp1970s <-SpatialPointsDataFrame(coords = temp@coords, data = temp@data[,c(1,3)])
+temp2010w <-SpatialPointsDataFrame(coords = temp@coords, data = temp@data[,c(1,4)])
+temp2010s <-SpatialPointsDataFrame(coords = temp@coords, data = temp@data[,c(1,5)])
+
+col <- c("id", "meansum")
+colnames(temp1970s@data) <- col
+colnames(temp2010s@data) <- col
+colnames(temp1970w@data) <- col
+colnames(temp2010w@data) <- col
+
+# Open digital elevation model
+DEM <-readGDAL(file.path(dataFolder, "globalDHM.tif"), silent = T)
+plot(DEM)
+```
+
+\newpage
+# Spatial continuity
+## First impressions of spatial variation
+### Winter before 1970
+```{r temp1970w, eval=TRUE, echo=FALSE, fig.height=3, fig.align="center", fig.cap="Mean temperature Winter from 1950 to 1970"}
+
+#plotting the coefficients of variation for all varibles
+spplot(temp1970w, "meansum", colorkey=T)
+```
+
+### Summer before 1970
+```{r temp1970s, eval=TRUE, echo=FALSE, fig.height=3, fig.align="center", fig.cap="Mean temperature Winter from 1950 to 1970"}
+
+#plotting the coefficients of variation for all varibles
+spplot(temp1970s,"meansum", colorkey=T)
+```
+### Winter before 2010
+```{r temp2010w, eval=TRUE, echo=FALSE, fig.height=3, fig.align="center", fig.cap="Mean temperature Winter from 1990 to 2010"}
+
+#plotting the coefficients of variation for all varibles
+spplot(temp2010w,"meansum", colorkey=T)
+```
+### Summer before 2010
+```{r temp2010s, eval=TRUE, echo=FALSE, fig.height=3, fig.align="center", fig.cap="Mean temperature Winter from 1990 to 2010"}
+
+#plotting the coefficients of variation for all varibles
+spplot(temp2010s,"meansum", colorkey=T)
+```
+## H - Scatterplots and autocovariance plots
+### Summer before 1970
+```{r scatter, echo=FALSE, fig.align="center", fig.height=4}
+
+temp.dist<-spDists(temp1970s,longlat = FALSE)
+temp.index <-knn.index(temp.dist, k=20, algorithm=c("kd_tree"))
+
+temp.h<-data.frame(sum=temp1970s$meansum ,sumNN1=temp1970s$meansum[temp.index[,1]],sumNN5=temp1970s$meansum[temp.index[,5]],sumNN10=temp1970s$meansum[temp.index[,10]],sumNN20=temp1970s$meansum[temp.index[,20]])
+
+par(mfrow=c(2,2))
+plot(temp.h$sum,temp.h$sumNN1,main="h = 1")
+abline(1,1, col = "blue")
+plot(temp.h$sum,temp.h$sumNN5,main="h = 5")
+abline(1,1, col = "blue")
+plot(temp.h$sum,temp.h$sumNN10,main="h = 10")
+abline(1,1, col = "blue")
+plot(temp.h$sum,temp.h$sumNN20,main="h = 20")
+abline(1,1, col = "blue")
+
+##Autocovariance plots
+temp.mean <- mean(temp.h$sum, na.rm = TRUE)
+temp.sd<-sd(temp.h$sum, na.rm = TRUE)
+
+temp.acov.nn1<-sum((temp.h$sum-temp.mean)*(temp.h$sumNN1-temp.mean), na.rm = TRUE)/nrow(temp.h)
+temp.acov.nn5<-sum((temp.h$sum-temp.mean)*(temp.h$sumNN5-temp.mean), na.rm = TRUE)/nrow(temp.h)
+temp.acov.nn10<-sum((temp.h$sum-temp.mean)*(temp.h$sumNN10-temp.mean), na.rm = TRUE)/nrow(temp.h)
+temp.acov.nn20<-sum((temp.h$sum-temp.mean)*(temp.h$sumNN20-temp.mean), na.rm = TRUE)/nrow(temp.h)
+
+temp.acorr.nn1<-temp.acov.nn1/temp.sd^2
+temp.acorr.nn5<-temp.acov.nn5/temp.sd^2
+temp.acorr.nn10<-temp.acov.nn10/temp.sd^2
+temp.acorr.nn20<-temp.acov.nn20/temp.sd^2
+
+par(mfrow=c(1,2))
+plot(c(1,5,10,20),c(temp.acov.nn1,temp.acov.nn5,temp.acov.nn10,temp.acov.nn20),type="l",main="auto-covariance")
+plot(c(1,5,10,20),c(temp.acorr.nn1,temp.acorr.nn5,temp.acorr.nn10,temp.acorr.nn20),type="l",main="auto-correlation")
+
+```
+### Winter before 1970
+```{r scatter2, echo=FALSE, fig.align="center", fig.height=4}
+
+temp.dist<-spDists(temp1970w,longlat = FALSE)
+temp.index <-knn.index(temp.dist, k=20, algorithm=c("kd_tree"))
+
+temp.h<-data.frame(sum=temp1970w$meansum ,sumNN1=temp1970w$meansum[temp.index[,1]],sumNN5=temp1970w$meansum[temp.index[,5]],sumNN10=temp1970w$meansum[temp.index[,10]],sumNN20=temp1970w$meansum[temp.index[,20]])
+
+par(mfrow=c(2,2))
+plot(temp.h$sum,temp.h$sumNN1,main="h = 1")
+abline(1,1, col = "blue")
+plot(temp.h$sum,temp.h$sumNN5,main="h = 5")
+abline(1,1, col = "blue")
+plot(temp.h$sum,temp.h$sumNN10,main="h = 10")
+abline(1,1, col = "blue")
+plot(temp.h$sum,temp.h$sumNN20,main="h = 20")
+abline(1,1, col = "blue")
+
+##Autocoavariance plots
+temp.mean<-mean(temp.h$sum, na.rm = TRUE)
+temp.sd<-sd(temp.h$sum, na.rm = TRUE)
+
+temp.acov.nn1<-sum((temp.h$sum-temp.mean)*(temp.h$sumNN1-temp.mean), na.rm = TRUE)/nrow(temp.h)
+temp.acov.nn5<-sum((temp.h$sum-temp.mean)*(temp.h$sumNN5-temp.mean), na.rm = TRUE)/nrow(temp.h)
+temp.acov.nn10<-sum((temp.h$sum-temp.mean)*(temp.h$sumNN10-temp.mean), na.rm = TRUE)/nrow(temp.h)
+temp.acov.nn20<-sum((temp.h$sum-temp.mean)*(temp.h$sumNN20-temp.mean), na.rm = TRUE)/nrow(temp.h)
+
+temp.acorr.nn1<-temp.acov.nn1/temp.sd^2
+temp.acorr.nn5<-temp.acov.nn5/temp.sd^2
+temp.acorr.nn10<-temp.acov.nn10/temp.sd^2
+temp.acorr.nn20<-temp.acov.nn20/temp.sd^2
+
+par(mfrow=c(1,2))
+plot(c(1,5,10,20),c(temp.acov.nn1,temp.acov.nn5,temp.acov.nn10,temp.acov.nn20),type="l",main="auto-covariance")
+plot(c(1,5,10,20),c(temp.acorr.nn1,temp.acorr.nn5,temp.acorr.nn10,temp.acorr.nn20),type="l",main="auto-correlation")
+
+```
+### Winter after 1990
+```{r scatter3, echo=FALSE, fig.align="center", fig.height=4}
+
+temp.dist<-spDists(temp2010w,longlat = FALSE)
+temp.index <-knn.index(temp.dist, k=20, algorithm=c("kd_tree"))
+
+temp.h<-data.frame(sum=temp2010w$meansum ,sumNN1=temp2010w$meansum[temp.index[,1]],sumNN5=temp2010w$meansum[temp.index[,5]],sumNN10=temp2010w$meansum[temp.index[,10]],sumNN20=temp2010w$meansum[temp.index[,20]])
+
+par(mfrow=c(2,2))
+plot(temp.h$sum,temp.h$sumNN1,main="h = 1")
+abline(1,1, col = "blue")
+plot(temp.h$sum,temp.h$sumNN5,main="h = 5")
+abline(1,1, col = "blue")
+plot(temp.h$sum,temp.h$sumNN10,main="h = 10")
+abline(1,1, col = "blue")
+plot(temp.h$sum,temp.h$sumNN20,main="h = 20")
+abline(1,1, col = "blue")
+
+##Autocoavariance plots
+temp.mean<-mean(temp.h$sum, na.rm = TRUE)
+temp.sd<-sd(temp.h$sum, na.rm = TRUE)
+
+temp.acov.nn1<-sum((temp.h$sum-temp.mean)*(temp.h$sumNN1-temp.mean), na.rm = TRUE)/nrow(temp.h)
+temp.acov.nn5<-sum((temp.h$sum-temp.mean)*(temp.h$sumNN5-temp.mean), na.rm = TRUE)/nrow(temp.h)
+temp.acov.nn10<-sum((temp.h$sum-temp.mean)*(temp.h$sumNN10-temp.mean), na.rm = TRUE)/nrow(temp.h)
+temp.acov.nn20<-sum((temp.h$sum-temp.mean)*(temp.h$sumNN20-temp.mean), na.rm = TRUE)/nrow(temp.h)
+
+temp.acorr.nn1<-temp.acov.nn1/temp.sd^2
+temp.acorr.nn5<-temp.acov.nn5/temp.sd^2
+temp.acorr.nn10<-temp.acov.nn10/temp.sd^2
+temp.acorr.nn20<-temp.acov.nn20/temp.sd^2
+
+par(mfrow=c(1,2))
+plot(c(1,5,10,20),c(temp.acov.nn1,temp.acov.nn5,temp.acov.nn10,temp.acov.nn20),type="l",main="auto-covariance")
+plot(c(1,5,10,20),c(temp.acorr.nn1,temp.acorr.nn5,temp.acorr.nn10,temp.acorr.nn20),type="l",main="auto-correlation")
+```
+### Summer after 1990
+```{r scatter4, echo=FALSE, fig.align="center", fig.height=4}
+
+temp.dist<-spDists(temp2010s,longlat = FALSE)
+temp.index <-knn.index(temp.dist, k=20, algorithm=c("kd_tree"))
+
+temp.h<-data.frame(sum=temp2010s$meansum ,sumNN1=temp2010s$meansum[temp.index[,1]],sumNN5=temp2010s$meansum[temp.index[,5]],sumNN10=temp2010s$meansum[temp.index[,10]],sumNN20=temp2010s$meansum[temp.index[,20]])
+
+par(mfrow=c(2,2))
+plot(temp.h$sum,temp.h$sumNN1,main="h = 1")
+abline(1,1, col = "blue")
+plot(temp.h$sum,temp.h$sumNN5,main="h = 5")
+abline(1,1, col = "blue")
+plot(temp.h$sum,temp.h$sumNN10,main="h = 10")
+abline(1,1, col = "blue")
+plot(temp.h$sum,temp.h$sumNN20,main="h = 20")
+abline(1,1, col = "blue")
+
+##Autocoavariance plots
+temp.mean<-mean(temp.h$sum, na.rm = TRUE)
+temp.sd<-sd(temp.h$sum, na.rm = TRUE)
+
+temp.acov.nn1<-sum((temp.h$sum-temp.mean)*(temp.h$sumNN1-temp.mean), na.rm = TRUE)/nrow(temp.h)
+temp.acov.nn5<-sum((temp.h$sum-temp.mean)*(temp.h$sumNN5-temp.mean), na.rm = TRUE)/nrow(temp.h)
+temp.acov.nn10<-sum((temp.h$sum-temp.mean)*(temp.h$sumNN10-temp.mean), na.rm = TRUE)/nrow(temp.h)
+temp.acov.nn20<-sum((temp.h$sum-temp.mean)*(temp.h$sumNN20-temp.mean), na.rm = TRUE)/nrow(temp.h)
+
+temp.acorr.nn1<-temp.acov.nn1/temp.sd^2
+temp.acorr.nn5<-temp.acov.nn5/temp.sd^2
+temp.acorr.nn10<-temp.acov.nn10/temp.sd^2
+temp.acorr.nn20<-temp.acov.nn20/temp.sd^2
+
+par(mfrow=c(1,2))
+plot(c(1,5,10,20),c(temp.acov.nn1,temp.acov.nn5,temp.acov.nn10,temp.acov.nn20),type="l",main="auto-covariance")
+plot(c(1,5,10,20),c(temp.acorr.nn1,temp.acorr.nn5,temp.acorr.nn10,temp.acorr.nn20),type="l",main="auto-correlation")
+
+```
+
+## Empirical Variogram
+### Winter before 1970
+```{r temp1970wvar, eval=TRUE, echo=FALSE, fig.height=3, fig.align="center"}
+temp1970w.var10<-variogram(meansum~1,temp1970w,cutoff=10000,width=10)
+temp1970w.var20<-variogram(meansum~1,temp1970w,cutoff=20000,width=20)
+temp1970w.var30<-variogram(meansum~1,temp1970w,cutoff=30000,width=30)
+
+plot(temp1970w.var10)
+plot(temp1970w.var20)
+plot(temp1970w.var30)
+```
+
+### Summer before 1970
+```{r temp1970s, eval=TRUE, echo=FALSE, fig.height=3, fig.align="center", fig.cap="Mean temperature Winter from 1950 to 1970"}
+
+#plotting the coefficients of variation for all varibles
+spplot(temp1970s,"meansum", colorkey=T)
+```
+### Winter before 2010
+```{r temp2010w, eval=TRUE, echo=FALSE, fig.height=3, fig.align="center", fig.cap="Mean temperature Winter from 1990 to 2010"}
+
+#plotting the coefficients of variation for all varibles
+spplot(temp2010w,"meansum", colorkey=T)
+```
+### Summer before 2010
+```{r temp2010s, eval=TRUE, echo=FALSE, fig.height=3, fig.align="center", fig.cap="Mean temperature Winter from 1990 to 2010"}
+
+#plotting the coefficients of variation for all varibles
+spplot(temp2010s,"meansum", colorkey=T)
+```
+
+
+
+
