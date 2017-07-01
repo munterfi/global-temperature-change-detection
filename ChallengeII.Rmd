@@ -64,6 +64,7 @@ library(gstat)
 library(FNN)
 #install.packages("spdep")
 library(spdep)
+library(gridExtra)
 
 ```
 
@@ -120,13 +121,13 @@ spplot(temp1970w, "meansum", colorkey=T)
 #plotting the coefficients of variation for all varibles
 spplot(temp1970s,"meansum", colorkey=T)
 ```
-### Winter before 2010
+### Winter after 1990
 ```{r temp2010w, eval=TRUE, echo=FALSE, fig.height=3, fig.align="center", fig.cap="Mean temperature Winter from 1990 to 2010"}
 
 #plotting the coefficients of variation for all varibles
 spplot(temp2010w,"meansum", colorkey=T)
 ```
-### Summer before 2010
+### Summer after 1990
 ```{r temp2010s, eval=TRUE, echo=FALSE, fig.height=3, fig.align="center", fig.cap="Mean temperature Winter from 1990 to 2010"}
 
 #plotting the coefficients of variation for all varibles
@@ -283,35 +284,171 @@ plot(c(1,5,10,20),c(temp.acorr.nn1,temp.acorr.nn5,temp.acorr.nn10,temp.acorr.nn2
 
 ## Empirical Variogram
 ### Winter before 1970
-```{r temp1970wvar, eval=TRUE, echo=FALSE, fig.height=3, fig.align="center"}
-temp1970w.var10<-variogram(meansum~1,temp1970w,cutoff=10000,width=10)
-temp1970w.var20<-variogram(meansum~1,temp1970w,cutoff=20000,width=20)
-temp1970w.var30<-variogram(meansum~1,temp1970w,cutoff=30000,width=30)
+```{r temp1970wvar, eval=TRUE, echo=FALSE, fig.height=2.5, fig.align="center"}
+temp1970w.var1<-variogram(meansum~1,temp1970w,cutoff=1000,width=1)
+temp1970w.var5<-variogram(meansum~1,temp1970w,cutoff=150,width=5)
+temp1970w.var10<-variogram(meansum~1,temp1970w,cutoff=150,width=10)
+temp1970w.var15<-variogram(meansum~1,temp1970w,cutoff=150,width=15)
 
-plot(temp1970w.var10)
-plot(temp1970w.var20)
-plot(temp1970w.var30)
+grid.arrange(plot(temp1970w.var1, main="Bin width 1km"), 
+             plot(temp1970w.var5, main="Bin width 5km"), ncol = 2)
+
+grid.arrange(plot(temp1970w.var10, main="Bin width 10km"), 
+             plot(temp1970w.var15, main="Bin width 15km"), ncol = 2)
+
+bws<-data.frame(np=temp1970w.var1$np,bw=rep("1km",length(temp1970w.var1$np)))
+bws<-rbind(bws,data.frame(np=temp1970w.var5$np,bw=rep("10km",length(temp1970w.var5$np))))
+bws<-rbind(bws,data.frame(np=temp1970w.var10$np,bw=rep("20km",length(temp1970w.var10$np))))
+bws<-rbind(bws,data.frame(np=temp1970w.var15$np,bw=rep("30km",length(temp1970w.var15$np))))
+
+#plotting the numbers of points per bin and bandwidth as a boxplot
+ggplot(bws, aes(x=bw, y=np, color=bw)) +
+  geom_boxplot()
 ```
 
+\newpage
 ### Summer before 1970
-```{r temp1970s, eval=TRUE, echo=FALSE, fig.height=3, fig.align="center", fig.cap="Mean temperature Winter from 1950 to 1970"}
+```{r temp1970svar, eval=TRUE, echo=FALSE, fig.height=2.5, fig.align="center"}
+temp1970s.var1<-variogram(meansum~1,temp1970s,cutoff=1000,width=1)
+temp1970s.var5<-variogram(meansum~1,temp1970s,cutoff=150,width=5)
+temp1970s.var10<-variogram(meansum~1,temp1970s,cutoff=150,width=10)
+temp1970s.var15<-variogram(meansum~1,temp1970s,cutoff=150,width=15)
 
-#plotting the coefficients of variation for all varibles
-spplot(temp1970s,"meansum", colorkey=T)
+grid.arrange(plot(temp1970s.var1, main="Bin width 1km"), 
+             plot(temp1970s.var5, main="Bin width 5km"), ncol = 2)
+
+grid.arrange(plot(temp1970s.var10, main="Bin width 10km"), 
+             plot(temp1970s.var15, main="Bin width 15km"), ncol = 2)
+
+bws<-data.frame(np=temp1970s.var1$np,bw=rep("1km",length(temp1970s.var1$np)))
+bws<-rbind(bws,data.frame(np=temp1970s.var5$np,bw=rep("10km",length(temp1970s.var5$np))))
+bws<-rbind(bws,data.frame(np=temp1970s.var10$np,bw=rep("20km",length(temp1970s.var10$np))))
+bws<-rbind(bws,data.frame(np=temp1970s.var15$np,bw=rep("30km",length(temp1970s.var15$np))))
+
+#plotting the numbers of points per bin and bandwidth as a boxplot
+ggplot(bws, aes(x=bw, y=np, color=bw)) +
+  geom_boxplot()
 ```
+
+\newpage
 ### Winter before 2010
-```{r temp2010w, eval=TRUE, echo=FALSE, fig.height=3, fig.align="center", fig.cap="Mean temperature Winter from 1990 to 2010"}
+```{r temp2010wvar, eval=TRUE, echo=FALSE, fig.height=2.5, fig.align="center"}
+temp2010w.var1<-variogram(meansum~1,temp2010w,cutoff=1000,width=1)
+temp2010w.var5<-variogram(meansum~1,temp2010w,cutoff=150,width=5)
+temp2010w.var10<-variogram(meansum~1,temp2010w,cutoff=150,width=10)
+temp2010w.var15<-variogram(meansum~1,temp2010w,cutoff=150,width=15)
 
-#plotting the coefficients of variation for all varibles
-spplot(temp2010w,"meansum", colorkey=T)
+grid.arrange(plot(temp2010w.var1, main="Bin width 1km"), 
+             plot(temp2010w.var5, main="Bin width 5km"), ncol = 2)
+
+grid.arrange(plot(temp2010w.var10, main="Bin width 10km"), 
+             plot(temp2010w.var15, main="Bin width 15km"), ncol = 2)
+
+bws<-data.frame(np=temp2010w.var1$np,bw=rep("1km",length(temp2010w.var1$np)))
+bws<-rbind(bws,data.frame(np=temp2010w.var5$np,bw=rep("10km",length(temp2010w.var5$np))))
+bws<-rbind(bws,data.frame(np=temp2010w.var10$np,bw=rep("20km",length(temp2010w.var10$np))))
+bws<-rbind(bws,data.frame(np=temp2010w.var15$np,bw=rep("30km",length(temp2010w.var15$np))))
+
+#plotting the numbers of points per bin and bandwidth as a boxplot
+ggplot(bws, aes(x=bw, y=np, color=bw)) +
+  geom_boxplot()
 ```
+
+\newpage
 ### Summer before 2010
-```{r temp2010s, eval=TRUE, echo=FALSE, fig.height=3, fig.align="center", fig.cap="Mean temperature Winter from 1990 to 2010"}
+```{r temp2010svar, eval=TRUE, echo=FALSE, fig.height=2.5, fig.align="center"}
+temp2010s.var1<-variogram(meansum~1,temp2010s,cutoff=1000,width=1)
+temp2010s.var5<-variogram(meansum~1,temp2010s,cutoff=150,width=5)
+temp2010s.var10<-variogram(meansum~1,temp2010s,cutoff=150,width=10)
+temp2010s.var15<-variogram(meansum~1,temp2010s,cutoff=150,width=15)
 
-#plotting the coefficients of variation for all varibles
-spplot(temp2010s,"meansum", colorkey=T)
+grid.arrange(plot(temp2010s.var1, main="Bin width 1km"), 
+             plot(temp2010s.var5, main="Bin width 5km"), ncol = 2)
+
+grid.arrange(plot(temp2010s.var10, main="Bin width 10km"), 
+             plot(temp2010s.var15, main="Bin width 15km"), ncol = 2)
+
+bws<-data.frame(np=temp2010s.var1$np,bw=rep("1km",length(temp2010s.var1$np)))
+bws<-rbind(bws,data.frame(np=temp2010s.var5$np,bw=rep("10km",length(temp2010s.var5$np))))
+bws<-rbind(bws,data.frame(np=temp2010s.var10$np,bw=rep("20km",length(temp2010s.var10$np))))
+bws<-rbind(bws,data.frame(np=temp2010s.var15$np,bw=rep("30km",length(temp2010s.var15$np))))
+
+#plotting the numbers of points per bin and bandwidth as a boxplot
+ggplot(bws, aes(x=bw, y=np, color=bw)) +
+  geom_boxplot()
 ```
 
+## Fitted Semivariogram
+### Winter before 1970
+```{r temp1970wfit, eval=TRUE, echo=FALSE, fig.height=2.5, fig.align="center"}
+temp1970w.var10<-variogram(meansum~1,temp1970w,cutoff=150,width=10)
 
+models <- c("Exp", "Sph", "Gau", "Mat")
+temp1970w.var10.fits <- lapply(X=1:4, FUN=function(x) fit.variogram(temp1970w.var10, model=vgm(models[x])))
 
+grid.arrange(plot(temp1970w.var10, model=temp1970w.var10.fits[[1]], main = "Exponential: 10km"), 
+             plot(temp1970w.var10, model=temp1970w.var10.fits[[2]], main = "Spherical: 10km"), ncol = 2)
+grid.arrange(plot(temp1970w.var10, model=temp1970w.var10.fits[[3]], main = "Gaussian: 10km"), 
+             plot(temp1970w.var10, model=temp1970w.var10.fits[[4]], main = "Mat: 10km"), ncol = 2)
+```
+
+\newpage
+### Summer before 1970
+```{r temp1970sfit, eval=TRUE, echo=FALSE, fig.height=2.5, fig.align="center"}
+temp1970s.var10<-variogram(meansum~1,temp1970s,cutoff=150,width=10)
+
+models <- c("Exp", "Sph", "Gau", "Mat")
+temp1970s.var10.fits <- lapply(X=1:4, FUN=function(x) fit.variogram(temp1970s.var10, model=vgm(models[x])))
+
+grid.arrange(plot(temp1970s.var10, model=temp1970s.var10.fits[[1]], main = "Exponential: 10km"), 
+             plot(temp1970s.var10, model=temp1970s.var10.fits[[2]], main = "Spherical: 10km"), ncol = 2)
+grid.arrange(plot(temp1970s.var10, model=temp1970s.var10.fits[[3]], main = "Gaussian: 10km"), 
+             plot(temp1970s.var10, model=temp1970s.var10.fits[[4]], main = "Mat: 10km"), ncol = 2)
+```
+
+\newpage
+### Winter after 1990
+```{r temp2010wfit, eval=TRUE, echo=FALSE, fig.height=2.5, fig.align="center"}
+temp2010w.var10<-variogram(meansum~1,temp2010w,cutoff=150,width=10)
+
+models <- c("Exp", "Sph", "Gau", "Mat")
+temp2010w.var10.fits <- lapply(X=1:4, FUN=function(x) fit.variogram(temp2010w.var10, model=vgm(models[x])))
+
+grid.arrange(plot(temp2010w.var10, model=temp2010w.var10.fits[[1]], main = "Exponential: 10km"), 
+             plot(temp2010w.var10, model=temp2010w.var10.fits[[2]], main = "Spherical: 10km"), ncol = 2)
+grid.arrange(plot(temp2010w.var10, model=temp2010w.var10.fits[[3]], main = "Gaussian: 10km"), 
+             plot(temp2010w.var10, model=temp2010w.var10.fits[[4]], main = "Mat: 10km"), ncol = 2)
+```
+
+\newpage
+### Summer after 1990
+```{r temp2010sfit, eval=TRUE, echo=FALSE, fig.height=2.5, fig.align="center"}
+temp2010s.var10<-variogram(meansum~1,temp2010s,cutoff=150,width=10)
+
+models <- c("Exp", "Sph", "Gau", "Mat")
+temp2010s.var10.fits <- lapply(X=1:4, FUN=function(x) fit.variogram(temp2010s.var10, model=vgm(models[x])))
+
+grid.arrange(plot(temp2010s.var10, model=temp2010s.var10.fits[[1]], main = "Exponential: 10km"), 
+             plot(temp2010s.var10, model=temp2010s.var10.fits[[2]], main = "Spherical: 10km"), ncol = 2)
+grid.arrange(plot(temp2010s.var10, model=temp2010s.var10.fits[[3]], main = "Gaussian: 10km"), 
+             plot(temp2010s.var10, model=temp2010s.var10.fits[[4]], main = "Mat: 10km"), ncol = 2)
+```
+
+\newpage
+## Ordinary krigin
+### Winter before 1970
+```{r temp1970OK, eval=TRUE, echo=FALSE, fig.height=2.5, fig.align="center"}
+# Use Gaussian model, with 10km bin width
+temp1970w.var10.fits[[3]]
+
+```
+### Summer before 1970
+### Winter after 1990
+### Summer after 1990
+
+## Ordinary Krigin
+### Winter before 1970
+### Summer before 1970
+### Winter after 1990
+### Summer after 1990
 
