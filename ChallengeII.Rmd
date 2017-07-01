@@ -102,7 +102,7 @@ colnames(temp2010w@data) <- col
 
 # Open digital elevation model
 DEM <-readGDAL(file.path(dataFolder, "globalDHM.tif"), silent = T)
-plot(DEM)
+plot(DEM, col=topo.colors(20))
 
 # Set up grid, for prediction
 grid <- spsample(DEM,type="regular",10000)
@@ -475,8 +475,8 @@ temp1970w.ok.var<-raster(temp1970w.ok, layer=2, values=TRUE)
 
 # Plotting
 par(mfrow=c(1,2))
-plot(temp1970w.ok.pred, main="Predicted temperature")
-plot(temp1970w.ok.var, main="Prediction uncertainty (variance)")
+plot(temp1970w.ok.pred, main="Predicted temperature", col=rev(heat.colors(10)), breaks=seq(-50, 40, length.out = 10))
+plot(temp1970w.ok.var, main="Prediction uncertainty (variance)", col=cm.colors(10), breaks=seq(0, 350, length.out = 10))
 ```
 
 ### Summer before 1970
@@ -514,8 +514,8 @@ temp1970s.ok.var<-raster(temp1970s.ok, layer=2, values=TRUE)
 
 # Plotting
 par(mfrow=c(1,2))
-plot(temp1970s.ok.pred, main="Predicted temperature")
-plot(temp1970s.ok.var, main="Prediction uncertainty (variance)")
+plot(temp1970s.ok.pred, main="Predicted temperature", col=rev(heat.colors(10)), breaks=seq(-50, 40, length.out = 10))
+plot(temp1970s.ok.var, main="Prediction uncertainty (variance)", col=cm.colors(10), breaks=seq(0, 350, length.out = 10))
 ```
 
 ### Winter after 1990
@@ -553,8 +553,8 @@ temp2010w.ok.var<-raster(temp2010w.ok, layer=2, values=TRUE)
 
 # Plotting
 par(mfrow=c(1,2))
-plot(temp2010w.ok.pred, main="Predicted temperature")
-plot(temp2010w.ok.var, main="Prediction uncertainty (variance)")
+plot(temp2010w.ok.pred, main="Predicted temperature", col=rev(heat.colors(10)), breaks=seq(-50, 40, length.out = 10))
+plot(temp2010w.ok.var, main="Prediction uncertainty (variance)", col=cm.colors(10), breaks=seq(0, 350, length.out = 10))
 ```
 
 ### Summer after 1990
@@ -592,9 +592,17 @@ temp2010s.ok.var<-raster(temp2010s.ok, layer=2, values=TRUE)
 
 # Plotting
 par(mfrow=c(1,2))
-plot(temp2010s.ok.pred, main="Predicted temperature")
-plot(temp2010s.ok.var, main="Prediction uncertainty (variance)")
+plot(temp2010s.ok.pred, main="Predicted temperature", col=rev(heat.colors(10)), breaks=seq(-50, 40, length.out = 10))
+plot(temp2010s.ok.var, main="Prediction uncertainty (variance)", col=cm.colors(10), breaks=seq(0, 350, length.out = 10))
 ```
+
+## Universal ordinary Krigin
+
+### Winter before 1970
+### Summer before 1970
+### Winter after 1990
+### Summer after 1990
+
 
 ## Ordinary Krigin
 ### Winter before 1970
