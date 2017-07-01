@@ -103,6 +103,10 @@ colnames(temp2010w@data) <- col
 # Open digital elevation model
 DEM <-readGDAL(file.path(dataFolder, "globalDHM.tif"), silent = T)
 plot(DEM)
+
+# Set up grid, for prediction
+grid <- spsample(DEM,type="regular",10000)
+grid <- SpatialPointsDataFrame(grid@coords,data.frame(elevation=extract(raster(DEM),grid)))
 ```
 
 \newpage
@@ -435,16 +439,162 @@ grid.arrange(plot(temp2010s.var10, model=temp2010s.var10.fits[[3]], main = "Gaus
 ```
 
 \newpage
-## Ordinary krigin
+## Ordinary krigin cross-validation
 ### Winter before 1970
-```{r temp1970OK, eval=TRUE, echo=FALSE, fig.height=2.5, fig.align="center"}
-# Use Gaussian model, with 10km bin width
-temp1970w.var10.fits[[3]]
+```{r temp1970wOK, eval=TRUE, echo=FALSE, fig.height=3, fig.align="center"}
+# # LOOCV is applied to each of the above fitted variograms, by iterating through the list of variograms
+# # in each interation only the RMSE value and the index are stored (and only if better than previous iterations)
+# RMSE <- 9999999
+# temp1970w.best.m.index <- NULL
+# for(i in 1:length(temp1970w.var10.fits)){
+#   ok.cv.temp <- krige.cv(meansum~1, temp1970w, nfold=nrow(temp1970w), model = temp1970w.var10.fits[[i]])
+#   rmse.temp <- sqrt(mean(ok.cv.temp$residual^2))
+#   if(RMSE > rmse.temp){
+#     RMSE <- rmse.temp
+#     temp1970w.best.m.index <- i
+#   }
+# }
+# 
+# # Best fitted variogram (index number as added to the list above):
+# temp1970w.best.m.index
+# 
+temp1970w.best.m.index <- 3
+temp1970w.best.m.index
+temp1970w.var10.fits[[temp1970w.best.m.index]]
 
+# Ordinary Krigin
+temp1970w.ok <- krige(meansum~1, temp1970w, grid, model = temp1970w.var10.fits[[temp1970w.best.m.index]])
+
+# For better mapping, using leaflet, we convert the interpolated spdf into a raster
+# with layer=1 and 2 we refer to the first and second attribute stored in the spdf
+# the first attribut is the prediction the second represents the prediction uncertainty, 
+# called variance.
+gridded(temp1970w.ok)<-TRUE
+temp1970w.ok.pred<-raster(temp1970w.ok, layer=1, values=TRUE)
+temp1970w.ok.var<-raster(temp1970w.ok, layer=2, values=TRUE)
+
+# Plotting
+par(mfrow=c(1,2))
+plot(temp1970w.ok.pred, main="Predicted temperature")
+plot(temp1970w.ok.var, main="Prediction uncertainty (variance)")
 ```
+
 ### Summer before 1970
+```{r temp1970sOK, eval=TRUE, echo=FALSE, fig.height=3, fig.align="center"}
+# # LOOCV is applied to each of the above fitted variograms, by iterating through the list of variograms
+# # in each interation only the RMSE value and the index are stored (and only if better than previous iterations)
+# RMSE <- 9999999
+# temp1970s.best.m.index <- NULL
+# for(i in 1:length(temp1970s.var10.fits)){
+#   ok.cv.temp <- krige.cv(meansum~1, temp1970s, nfold=nrow(temp1970s), model = temp1970s.var10.fits[[i]])
+#   rmse.temp <- sqrt(mean(ok.cv.temp$residual^2))
+#   if(RMSE > rmse.temp){
+#     RMSE <- rmse.temp
+#     temp1970s.best.m.index <- i
+#   }
+# }
+# 
+# # Best fitted variogram (index number as added to the list above):
+# temp1970s.best.m.index
+# 
+temp1970s.best.m.index <- 3
+temp1970s.best.m.index
+temp1970s.var10.fits[[temp1970s.best.m.index]]
+
+# Ordinary Krigin
+temp1970s.ok <- krige(meansum~1, temp1970s, grid, model = temp1970s.var10.fits[[temp1970s.best.m.index]])
+
+# For better mapping, using leaflet, we convert the interpolated spdf into a raster
+# with layer=1 and 2 we refer to the first and second attribute stored in the spdf
+# the first attribut is the prediction the second represents the prediction uncertainty, 
+# called variance.
+gridded(temp1970s.ok)<-TRUE
+temp1970s.ok.pred<-raster(temp1970s.ok, layer=1, values=TRUE)
+temp1970s.ok.var<-raster(temp1970s.ok, layer=2, values=TRUE)
+
+# Plotting
+par(mfrow=c(1,2))
+plot(temp1970s.ok.pred, main="Predicted temperature")
+plot(temp1970s.ok.var, main="Prediction uncertainty (variance)")
+```
+
 ### Winter after 1990
+```{r temp2010wOK, eval=TRUE, echo=FALSE, fig.height=3, fig.align="center"}
+# # LOOCV is applied to each of the above fitted variograms, by iterating through the list of variograms
+# # in each interation only the RMSE value and the index are stored (and only if better than previous iterations)
+# RMSE <- 9999999
+# temp2010w.best.m.index <- NULL
+# for(i in 1:length(temp2010w.var10.fits)){
+#   ok.cv.temp <- krige.cv(meansum~1, temp2010w, nfold=nrow(temp2010w), model = temp2010w.var10.fits[[i]])
+#   rmse.temp <- sqrt(mean(ok.cv.temp$residual^2))
+#   if(RMSE > rmse.temp){
+#     RMSE <- rmse.temp
+#     temp2010w.best.m.index <- i
+#   }
+# }
+# 
+# # Best fitted variogram (index number as added to the list above):
+# temp2010w.best.m.index
+# 
+temp2010w.best.m.index <- 3
+temp2010w.best.m.index
+temp2010w.var10.fits[[temp2010w.best.m.index]]
+
+# Ordinary Krigin
+temp2010w.ok <- krige(meansum~1, temp2010w, grid, model = temp2010w.var10.fits[[temp2010w.best.m.index]])
+
+# For better mapping, using leaflet, we convert the interpolated spdf into a raster
+# with layer=1 and 2 we refer to the first and second attribute stored in the spdf
+# the first attribut is the prediction the second represents the prediction uncertainty, 
+# called variance.
+gridded(temp2010w.ok)<-TRUE
+temp2010w.ok.pred<-raster(temp2010w.ok, layer=1, values=TRUE)
+temp2010w.ok.var<-raster(temp2010w.ok, layer=2, values=TRUE)
+
+# Plotting
+par(mfrow=c(1,2))
+plot(temp2010w.ok.pred, main="Predicted temperature")
+plot(temp2010w.ok.var, main="Prediction uncertainty (variance)")
+```
+
 ### Summer after 1990
+```{r temp2010sOK, eval=TRUE, echo=FALSE, fig.height=3, fig.align="center"}
+# # LOOCV is applied to each of the above fitted variograms, by iterating through the list of variograms
+# # in each interation only the RMSE value and the index are stored (and only if better than previous iterations)
+# RMSE <- 9999999
+# temp2010s.best.m.index <- NULL
+# for(i in 1:length(temp2010s.var10.fits)){
+#   ok.cv.temp <- krige.cv(meansum~1, temp2010s, nfold=nrow(temp2010s), model = temp2010s.var10.fits[[i]])
+#   rmse.temp <- sqrt(mean(ok.cv.temp$residual^2))
+#   if(RMSE > rmse.temp){
+#     RMSE <- rmse.temp
+#     temp2010s.best.m.index <- i
+#   }
+# }
+# 
+# # Best fitted variogram (index number as added to the list above):
+# temp2010s.best.m.index
+# 
+temp2010s.best.m.index <- 3
+temp2010s.best.m.index
+temp2010s.var10.fits[[temp2010s.best.m.index]]
+
+# Ordinary Krigin
+temp2010s.ok <- krige(meansum~1, temp2010s, grid, model = temp2010s.var10.fits[[temp2010s.best.m.index]])
+
+# For better mapping, using leaflet, we convert the interpolated spdf into a raster
+# with layer=1 and 2 we refer to the first and second attribute stored in the spdf
+# the first attribut is the prediction the second represents the prediction uncertainty, 
+# called variance.
+gridded(temp2010s.ok)<-TRUE
+temp2010s.ok.pred<-raster(temp2010s.ok, layer=1, values=TRUE)
+temp2010s.ok.var<-raster(temp2010s.ok, layer=2, values=TRUE)
+
+# Plotting
+par(mfrow=c(1,2))
+plot(temp2010s.ok.pred, main="Predicted temperature")
+plot(temp2010s.ok.var, main="Prediction uncertainty (variance)")
+```
 
 ## Ordinary Krigin
 ### Winter before 1970
