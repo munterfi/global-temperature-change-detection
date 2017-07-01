@@ -51,7 +51,7 @@ The following libraries are needed, to execute the code:
 ```{r Libraries, message=FALSE, echo=FALSE}
 #library(e1071)            # Support Vector Machine library
 library(sp)               # Spatial data types
-#library(rgeos)            # Geoprocessing
+library(rgeos)            # Geoprocessing
 library(rgdal)            # Open Shapefiles
 library(ggplot2)          # Plots
 library(gdistance)        # Least cost path - Walking time
@@ -65,6 +65,7 @@ library(FNN)
 #install.packages("spdep")
 library(spdep)
 library(gridExtra)
+library(raster)
 
 ```
 
@@ -102,11 +103,15 @@ colnames(temp2010w@data) <- col
 
 # Open digital elevation model
 DEM <-readGDAL(file.path(dataFolder, "globalDHM.tif"), silent = T)
-plot(DEM, col=topo.colors(20))
+#plot(DEM, col=topo.colors(20))
+plot(raster(DEM))
 
 # Set up grid, for prediction
 grid <- spsample(DEM,type="regular",10000)
 grid <- SpatialPointsDataFrame(grid@coords,data.frame(elevation=extract(raster(DEM),grid)))
+
+# Load coastlines for plotting
+oceans <- readOGR(dsn="data", "ne_110m_ocean", verbose=F)
 ```
 
 \newpage
@@ -476,7 +481,9 @@ temp1970w.ok.var<-raster(temp1970w.ok, layer=2, values=TRUE)
 # Plotting
 par(mfrow=c(1,2))
 plot(temp1970w.ok.pred, main="Predicted temperature", col=rev(heat.colors(10)), breaks=seq(-50, 40, length.out = 10))
+lines(oceans)
 plot(temp1970w.ok.var, main="Prediction uncertainty (variance)", col=cm.colors(10), breaks=seq(0, 350, length.out = 10))
+lines(oceans)
 ```
 
 ### Summer before 1970
@@ -515,7 +522,9 @@ temp1970s.ok.var<-raster(temp1970s.ok, layer=2, values=TRUE)
 # Plotting
 par(mfrow=c(1,2))
 plot(temp1970s.ok.pred, main="Predicted temperature", col=rev(heat.colors(10)), breaks=seq(-50, 40, length.out = 10))
+lines(oceans)
 plot(temp1970s.ok.var, main="Prediction uncertainty (variance)", col=cm.colors(10), breaks=seq(0, 350, length.out = 10))
+lines(oceans)
 ```
 
 ### Winter after 1990
@@ -554,7 +563,9 @@ temp2010w.ok.var<-raster(temp2010w.ok, layer=2, values=TRUE)
 # Plotting
 par(mfrow=c(1,2))
 plot(temp2010w.ok.pred, main="Predicted temperature", col=rev(heat.colors(10)), breaks=seq(-50, 40, length.out = 10))
+lines(oceans)
 plot(temp2010w.ok.var, main="Prediction uncertainty (variance)", col=cm.colors(10), breaks=seq(0, 350, length.out = 10))
+lines(oceans)
 ```
 
 ### Summer after 1990
@@ -593,12 +604,55 @@ temp2010s.ok.var<-raster(temp2010s.ok, layer=2, values=TRUE)
 # Plotting
 par(mfrow=c(1,2))
 plot(temp2010s.ok.pred, main="Predicted temperature", col=rev(heat.colors(10)), breaks=seq(-50, 40, length.out = 10))
+lines(oceans)
 plot(temp2010s.ok.var, main="Prediction uncertainty (variance)", col=cm.colors(10), breaks=seq(0, 350, length.out = 10))
+lines(oceans)
 ```
 
 ## Universal ordinary Krigin
+### Continentality: Create distance to ocean layer
+```{r continentality, eval=TRUE, echo=FALSE, fig.align="center"}
+# Load highres coastlines for distance layer
+oceans.50m <- readOGR(dsn="data", "ne_50m_ocean", verbose=F)
+# Simplify geometry
+oceans.simply <-SpatialPolygonsDataFrame(
+  gSimplify(oceans.50m, tol=1, topologyPreserve=TRUE),
+  data=oceans.50m@data)
+
+# Build blank raster
+r <- raster(DEM)
+r <- setValues(r, 0)
+r <- aggregate(r, fact=10)
+
+# Make values NA where polygon intesects raster
+r <- mask(r, oceans.simply)
+
+# Run distance check
+ocean.dist <- distance(r)
+
+# # to restrict your search
+# searchLimit <- 100 # the maximum distance in raster units from lakes/boundaries
+# oceans.simply.buff <- gBuffer(oceans.simply, width = searchLimit, byid = T)
+# rB <- crop(r, extent(oceans.simply.buff))
+# 
+# # much faster...
+# rDB <- distance(rB)
+
+plot(ocean.dist, main="Continentality")
+lines(oceans, col="Grey")
+```
 
 ### Winter before 1970
+```{r temp1970wOK, eval=TRUE, echo=FALSE, fig.height=3, fig.align="center"}
+# Extract continentality and elevation at measurement points from rasters
+temp1970w$elev <- extract(raster(DEM), temp1970w)
+temp1970w$cont <- extract(ocean.dist, temp1970w)
+temp1970w$lati <- coordinates(temp1970w)[,2]
+
+# Linear Regression
+temp1970w.lm.test <- lm(meansum~elev+cont+lati, data=temp1970w@data)
+summary(temp1970w.lm.test)
+```
 ### Summer before 1970
 ### Winter after 1990
 ### Summer after 1990
