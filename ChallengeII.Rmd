@@ -449,7 +449,7 @@ grid.arrange(plot(temp2010s.var10, model=temp2010s.var10.fits[[3]], main = "Gaus
 \newpage
 ## Ordinary krigin cross-validation
 ### Winter before 1970
-```{r temp1970wOK, eval=TRUE, echo=FALSE, fig.height=3, fig.align="center"}
+```{r temp1970wOK, eval=FALSE, echo=FALSE, fig.height=3, fig.align="center"}
 # # LOOCV is applied to each of the above fitted variograms, by iterating through the list of variograms
 # # in each interation only the RMSE value and the index are stored (and only if better than previous iterations)
 # RMSE <- 9999999
@@ -490,7 +490,7 @@ lines(oceans)
 ```
 
 ### Summer before 1970
-```{r temp1970sOK, eval=TRUE, echo=FALSE, fig.height=3, fig.align="center"}
+```{r temp1970sOK, eval=FALSE, echo=FALSE, fig.height=3, fig.align="center"}
 # # LOOCV is applied to each of the above fitted variograms, by iterating through the list of variograms
 # # in each interation only the RMSE value and the index are stored (and only if better than previous iterations)
 # RMSE <- 9999999
@@ -531,7 +531,7 @@ lines(oceans)
 ```
 
 ### Winter after 1990
-```{r temp2010wOK, eval=TRUE, echo=FALSE, fig.height=3, fig.align="center"}
+```{r temp2010wOK, eval=FALSE, echo=FALSE, fig.height=3, fig.align="center"}
 # # LOOCV is applied to each of the above fitted variograms, by iterating through the list of variograms
 # # in each interation only the RMSE value and the index are stored (and only if better than previous iterations)
 # RMSE <- 9999999
@@ -572,7 +572,7 @@ lines(oceans)
 ```
 
 ### Summer after 1990
-```{r temp2010sOK, eval=TRUE, echo=FALSE, fig.height=3, fig.align="center"}
+```{r temp2010sOK, eval=FALSE, echo=FALSE, fig.height=3, fig.align="center"}
 # # LOOCV is applied to each of the above fitted variograms, by iterating through the list of variograms
 # # in each interation only the RMSE value and the index are stored (and only if better than previous iterations)
 # RMSE <- 9999999
@@ -645,7 +645,7 @@ levelplot(ocean.dist) + layer(sp.polygons(oceans, fill='lightblue', alpha=0.3))
 ```
 
 ### Sun incidence angle
-```{r h}
+```{r h, eval=TRUE, echo=FALSE, fig.align="center"}
 # Create latitude and longitude layers
 lon <- lat <- raster(DEM)
 lon[] <- coordinates(raster(DEM))[, 1]
@@ -668,11 +668,24 @@ levelplot(latGrad, main="Latitude gradient, hemisphere corrected") + layer(sp.po
 # http://www.geoastro.de/astro/mittag/index.htm; h = 90° - β + δ
 # Substract ghradient northern hemisphere and add to the southern
 # 21.6 - "Summer"; +23.5°
-h.w <- 90-abs(lat + 23.5)+latGrad
+h.w <- (90-abs(lat + 23.5)+latGrad)
 h.s <- 90-abs(lat - 23.5)+latGrad
 
 levelplot(h.w, main="Sun incident angle, winter") + layer(sp.polygons(oceans, fill='blue', alpha=0.7))
 levelplot(h.s, main="Sun incident angle, summer") + layer(sp.polygons(oceans, fill='blue', alpha=0.7))
+```
+
+### Atmospheric distance
+```{r h, eval=TRUE, echo=FALSE, fig.align="center"}
+# Create distance layer
+lat.w.rad <- abs(lat + 23.5)*pi/180
+atmo.dist.w <- 1-cos(lat.w.rad)
+
+lat.s.rad <- abs(lat - 23.5)*pi/180
+atmo.dist.s <- 1-cos(lat.s.rad)
+
+levelplot(atmo.dist.w, main="Atmospheric distance, winter") + layer(sp.polygons(oceans, fill='blue', alpha=0.7))
+levelplot(atmo.dist.s, main="Atmospheric distance, winter") + layer(sp.polygons(oceans, fill='blue', alpha=0.7))
 ```
 
 
@@ -682,10 +695,20 @@ levelplot(h.s, main="Sun incident angle, summer") + layer(sp.polygons(oceans, fi
 temp1970w$elev <- extract(raster(DEM), temp1970w)
 temp1970w$cont <- extract(ocean.dist, temp1970w)
 temp1970w$h <- extract(h.w, temp1970w)
+temp1970w$dist <- extract(atmo.dist, temp1970w)
 
 # Linear Regression
-temp1970w.lm.test <- lm(meansum~elev+cont+h+s+a, data=temp1970w@data)
+temp1970w.lm.test <- lm(meansum~elev+cont+h+dist, data=temp1970w@data)
 summary(temp1970w.lm.test)
+
+# Distribution of residuals
+temp1970w@data[names(temp1970w.lm.test$residuals),"lmRes"]<-temp1970w.lm.test$residuals
+temp1970w@data$lmRes[is.na(temp1970w@data$lmRes)] <- 0
+temp1970w$lmResRel<-temp1970w$lmRes/temp1970w$meansum
+
+# Plot results
+bubble(temp1970w,"lmRes",main="Residual Values", na.rm=T)
+plot(variogram(lmRes~1,temp1970w,width=10,cutoff=200),main="Residual Variogram")
 ```
 ### Summer before 1970
 ### Winter after 1990
