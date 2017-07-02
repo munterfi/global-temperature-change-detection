@@ -32,6 +32,7 @@ options(warning=FALSE)    # Don't show warnings
 par(mfrow=c(1,1))         # reset plot placement to normal 1 by 1
 
 dataFolder    <- file.path(getwd(), "data")            # Data folder
+resultsFolder <- file.path(getwd(), "results")            # Result folder
 figureFolder  <- file.path(getwd(), "figures")         # Figure Folder
 ```
 
@@ -49,13 +50,13 @@ The following libraries are needed, to execute the code:
 
 
 ```{r Libraries, message=FALSE, echo=FALSE}
-#library(e1071)            # Support Vector Machine library
-library(sp)               # Spatial data types
-library(rgeos)            # Geoprocessing
-library(rgdal)            # Open Shapefiles
-library(ggplot2)          # Plots
-library(gdistance)        # Least cost path - Walking time
-library(rasterVis)        # Plots of rasters
+library(ape)
+library(sp)
+library(rgeos)
+library(rgdal)
+library(ggplot2) 
+library(gdistance) 
+library(rasterVis)
 library(plyr)
 #spatial statistics library
 #install.packages("gstat")
@@ -108,7 +109,7 @@ landDEM <- raster(DEM)
 landDEM[landDEM<0] <- 0
 
 # Set up grid, for prediction
-grid <- spsample(DEM,type="regular",10000)
+grid <- spsample(DEM,type="regular",100)
 grid <- SpatialPointsDataFrame(grid@coords,data.frame(elevation=extract(raster(DEM),grid)))
 
 # Load coastlines for plotting
@@ -118,7 +119,7 @@ levelplot(landDEM) + layer(sp.polygons(oceans, fill='lightblue', alpha=0.3))
 ```
 
 \newpage
-# Spatial continuity
+# TaskI: Spatial continuity
 ## First impressions of spatial variation
 ### Winter before 1970
 ```{r temp1970w, eval=TRUE, echo=FALSE, fig.height=3, fig.align="center", fig.cap="Mean temperature Winter from 1950 to 1970"}
@@ -222,7 +223,6 @@ plot(c(1,5,10,20),c(temp.acorr.nn1,temp.acorr.nn5,temp.acorr.nn10,temp.acorr.nn2
 ```
 ### Winter after 1990
 ```{r scatter3, echo=FALSE, fig.align="center", fig.height=4}
-
 temp.dist<-spDists(temp2010w,longlat = FALSE)
 temp.index <-knn.index(temp.dist, k=20, algorithm=c("kd_tree"))
 
@@ -447,8 +447,8 @@ grid.arrange(plot(temp2010s.var10, model=temp2010s.var10.fits[[3]], main = "Gaus
 ```
 
 \newpage
-## Ordinary krigin cross-validation
-### Winter before 1970
+# Ordinary krigin cross-validation
+## Winter before 1970
 ```{r temp1970wOK, eval=FALSE, echo=FALSE, fig.height=3, fig.align="center"}
 # # LOOCV is applied to each of the above fitted variograms, by iterating through the list of variograms
 # # in each interation only the RMSE value and the index are stored (and only if better than previous iterations)
@@ -489,7 +489,7 @@ plot(temp1970w.ok.var, main="Prediction uncertainty (variance)", col=cm.colors(1
 lines(oceans)
 ```
 
-### Summer before 1970
+## Summer before 1970
 ```{r temp1970sOK, eval=FALSE, echo=FALSE, fig.height=3, fig.align="center"}
 # # LOOCV is applied to each of the above fitted variograms, by iterating through the list of variograms
 # # in each interation only the RMSE value and the index are stored (and only if better than previous iterations)
@@ -530,7 +530,7 @@ plot(temp1970s.ok.var, main="Prediction uncertainty (variance)", col=cm.colors(1
 lines(oceans)
 ```
 
-### Winter after 1990
+## Winter after 1990
 ```{r temp2010wOK, eval=FALSE, echo=FALSE, fig.height=3, fig.align="center"}
 # # LOOCV is applied to each of the above fitted variograms, by iterating through the list of variograms
 # # in each interation only the RMSE value and the index are stored (and only if better than previous iterations)
@@ -571,7 +571,7 @@ plot(temp2010w.ok.var, main="Prediction uncertainty (variance)", col=cm.colors(1
 lines(oceans)
 ```
 
-### Summer after 1990
+## Summer after 1990
 ```{r temp2010sOK, eval=FALSE, echo=FALSE, fig.height=3, fig.align="center"}
 # # LOOCV is applied to each of the above fitted variograms, by iterating through the list of variograms
 # # in each interation only the RMSE value and the index are stored (and only if better than previous iterations)
@@ -612,9 +612,9 @@ plot(temp2010s.ok.var, main="Prediction uncertainty (variance)", col=cm.colors(1
 lines(oceans)
 ```
 
-## Universal ordinary Krigin
-### Continentality: Create distance to ocean layer
-```{r continentality, eval=TRUE, echo=FALSE, fig.align="center"}
+# Task II: Universal ordinary Krigin
+## Continentality: Create distance to ocean layer
+```{r continentality, eval=TRUE, echo=FALSE, warnings=FALSE, message=FALSE, fig.align="center"}
 # Load highres coastlines for distance layer
 oceans.50m <- readOGR(dsn="data", "ne_50m_ocean", verbose=F)
 # Simplify geometry
@@ -644,8 +644,8 @@ ocean.dist <- distance(r)
 levelplot(ocean.dist) + layer(sp.polygons(oceans, fill='lightblue', alpha=0.3))
 ```
 
-### Sun incidence angle
-```{r h, eval=TRUE, echo=FALSE, fig.align="center"}
+## Sun incidence angle
+```{r h, eval=TRUE, echo=FALSE,  warnings=FALSE, message=FALSE, fig.align="center"}
 # Create latitude and longitude layers
 lon <- lat <- raster(DEM)
 lon[] <- coordinates(raster(DEM))[, 1]
@@ -675,8 +675,8 @@ levelplot(h.w, main="Sun incident angle, winter") + layer(sp.polygons(oceans, fi
 levelplot(h.s, main="Sun incident angle, summer") + layer(sp.polygons(oceans, fill='blue', alpha=0.7))
 ```
 
-### Atmospheric distance
-```{r h, eval=TRUE, echo=FALSE, fig.align="center"}
+## Atmospheric distance
+```{r d, eval=TRUE, echo=FALSE, warnings=FALSE, message=FALSE, fig.align="center"}
 # Create distance layer
 lat.w.rad <- abs(lat + 23.5)*pi/180
 atmo.dist.w <- 1-cos(lat.w.rad)
@@ -688,17 +688,33 @@ levelplot(atmo.dist.w, main="Atmospheric distance, winter") + layer(sp.polygons(
 levelplot(atmo.dist.s, main="Atmospheric distance, winter") + layer(sp.polygons(oceans, fill='blue', alpha=0.7))
 ```
 
+## Interpolation
+```{r new grid, eval=TRUE, echo=FALSE, warnings=FALSE, fig.align="center"}
+# Set up grid, for prediction
+grid <- rasterToPoints(aggregate(landDEM, fact=25))
+grid <- grid[,1:2]
+grid <- SpatialPointsDataFrame(grid,data.frame(elev=extract(raster(DEM),grid)))
+```
 
 ### Winter before 1970
-```{r temp1970wUOK, eval=TRUE, echo=FALSE, fig.height=3, fig.align="center"}
+```{r temp1970wUOK, eval=TRUE, echo=FALSE, warnings=FALSE, fig.align="center"}
 # Extract continentality and elevation at measurement points from rasters
 temp1970w$elev <- extract(raster(DEM), temp1970w)
+temp1970w$elev[is.na(temp1970w$elev)] <- 0
 temp1970w$cont <- extract(ocean.dist, temp1970w)
-temp1970w$h <- extract(h.w, temp1970w)
-temp1970w$dist <- extract(atmo.dist, temp1970w)
+temp1970w$cont[is.na(temp1970w$cont)] <- 0
+temp1970w$hsun <- extract(h.w, temp1970w)
+temp1970w$hsun[is.na(temp1970w$hsun)] <- 0
+temp1970w$dist <- extract(atmo.dist.w, temp1970w)
+temp1970w$dist[is.na(temp1970w$dist)] <- 0
+
+#grid$elev <- extract(raster(DEM), grid)
+grid$cont <- extract(ocean.dist, grid)
+grid$hsun <- extract(h.w, grid)
+grid$dist <- extract(atmo.dist.w, grid)
 
 # Linear Regression
-temp1970w.lm.test <- lm(meansum~elev+cont+h+dist, data=temp1970w@data)
+temp1970w.lm.test <- lm(meansum~elev+cont+hsun+dist, data=temp1970w@data)
 summary(temp1970w.lm.test)
 
 # Distribution of residuals
@@ -709,7 +725,38 @@ temp1970w$lmResRel<-temp1970w$lmRes/temp1970w$meansum
 # Plot results
 bubble(temp1970w,"lmRes",main="Residual Values", na.rm=T)
 plot(variogram(lmRes~1,temp1970w,width=10,cutoff=200),main="Residual Variogram")
+
+# Compute distance matrix
+temp1970w.d <- as.matrix(dist(cbind(temp1970w@coords[,1], temp1970w@coords[,2])), method = "euclidean", alternative = "greater")
+
+# Inverse distance matrix
+temp1970w.d.inv <- 1 / temp1970w.d
+
+# Setting diagonal to 0
+diag(temp1970w.d.inv) <- 0
+
+# Print Moran's I
+temp.moran <- Moran.I(temp1970w$lmRes, temp1970w.d.inv)
+paste("Observed autocorrelation: ",temp.moran$observed," | p-value of H0 (residuals are randomly distributed): ",temp.moran$p.value)
+
+# Universal Ordinary Krigin
+temp1970w.best.m.index <- 3
+temp1970w.uok <- krige(meansum~elev+cont+hsun+dist,
+                       temp1970w, grid,
+                       model = temp1970w.var10.fits[[temp1970w.best.m.index]])
+
+# Create grid
+gridded(temp1970w.uok)<-TRUE
+temp1970w.uok.pred<-raster(temp1970w.uok, layer=1, values=TRUE)
+temp1970w.uok.var<-raster(temp1970w.uok, layer=2, values=TRUE)
+levelplot(temp1970w.uok.pred, main="Prediction: Winter before 1970") + layer(sp.polygons(oceans, fill='transparent'))
+levelplot(temp1970w.uok.pred, main="Uncertainty: Winter before 1970") + layer(sp.polygons(oceans, fill='transparent'))
+
+# Save raster
+writeRaster(temp1970w.uok.pred, file.path(resultsFolder, "temp1970w.uok.pred"), format = "GTiff", overwrite=TRUE)
+writeRaster(temp1970w.uok.var, file.path(resultsFolder, "temp1970w.uok.var"), format = "GTiff", overwrite=TRUE)
 ```
+
 ### Summer before 1970
 ### Winter after 1990
 ### Summer after 1990
