@@ -55,7 +55,7 @@ library(rgeos)            # Geoprocessing
 library(rgdal)            # Open Shapefiles
 library(ggplot2)          # Plots
 library(gdistance)        # Least cost path - Walking time
-#library(rasterVis)        # Plots of rasters
+library(rasterVis)        # Plots of rasters
 library(plyr)
 #spatial statistics library
 #install.packages("gstat")
@@ -104,7 +104,8 @@ colnames(temp2010w@data) <- col
 # Open digital elevation model
 DEM <-readGDAL(file.path(dataFolder, "globalDHM.tif"), silent = T)
 #plot(DEM, col=topo.colors(20))
-plot(raster(DEM))
+landDEM <- raster(DEM)
+landDEM[landDEM<0] <- 0
 
 # Set up grid, for prediction
 grid <- spsample(DEM,type="regular",10000)
@@ -112,6 +113,8 @@ grid <- SpatialPointsDataFrame(grid@coords,data.frame(elevation=extract(raster(D
 
 # Load coastlines for plotting
 oceans <- readOGR(dsn="data", "ne_110m_ocean", verbose=F)
+
+levelplot(landDEM) + layer(sp.polygons(oceans, fill='lightblue', alpha=0.3))
 ```
 
 \newpage
@@ -638,19 +641,50 @@ ocean.dist <- distance(r)
 # # much faster...
 # rDB <- distance(rB)
 
-plot(ocean.dist, main="Continentality")
-lines(oceans, col="Grey")
+levelplot(ocean.dist) + layer(sp.polygons(oceans, fill='lightblue', alpha=0.3))
 ```
 
+### Sun incidence angle
+```{r h}
+# Create latitude and longitude layers
+lon <- lat <- raster(DEM)
+lon[] <- coordinates(raster(DEM))[, 1]
+lat[] <- coordinates(raster(DEM))[, 2]
+
+# Slope and aspect
+slope <- terrain(landDEM, opt='slope', unit='radians')
+aspect <- terrain(landDEM, opt='aspect', unit='radians')
+
+# Split the hemispheres
+split.hemi <- setValues(lat, 1)
+split.hemi[1:(nrow(lat)/2), 1:ncol(lat)] <- -1
+
+# Calculate the gradient in latitude direction
+latGrad <- (cos(aspect)*slope)*180/pi
+latGrad <- latGrad*split.hemi
+levelplot(latGrad, main="Latitude gradient, hemisphere corrected") + layer(sp.polygons(oceans, fill='blue', alpha=0.7))
+
+## Solar incident angle (height at midday)
+# http://www.geoastro.de/astro/mittag/index.htm; h = 90° - β + δ
+# Substract ghradient northern hemisphere and add to the southern
+# 21.6 - "Summer"; +23.5°
+h.w <- 90-abs(lat + 23.5)+latGrad
+h.s <- 90-abs(lat - 23.5)+latGrad
+
+levelplot(h.w, main="Sun incident angle, winter") + layer(sp.polygons(oceans, fill='blue', alpha=0.7))
+levelplot(h.s, main="Sun incident angle, summer") + layer(sp.polygons(oceans, fill='blue', alpha=0.7))
+```
+
+
 ### Winter before 1970
-```{r temp1970wOK, eval=TRUE, echo=FALSE, fig.height=3, fig.align="center"}
+```{r temp1970wUOK, eval=TRUE, echo=FALSE, fig.height=3, fig.align="center"}
 # Extract continentality and elevation at measurement points from rasters
 temp1970w$elev <- extract(raster(DEM), temp1970w)
 temp1970w$cont <- extract(ocean.dist, temp1970w)
-temp1970w$lati <- coordinates(temp1970w)[,2]
+temp1970w$h <- extract(h.w, temp1970w)
 
 # Linear Regression
-temp1970w.lm.test <- lm(meansum~elev+cont+lati, data=temp1970w@data)
+temp1970w.lm.test <- lm(meansum~elev+cont+h+s+a, data=temp1970w@data)
 summary(temp1970w.lm.test)
 ```
 ### Summer before 1970
