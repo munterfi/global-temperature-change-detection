@@ -500,7 +500,7 @@ levelplot(atmo.dist.s, par.settings=RdBuTheme(), main="Atmospheric distance, win
 ## Interpolation
 ```{r new grid, eval=TRUE, echo=FALSE, warnings=FALSE, fig.align="center"}
 # Set up grid, for prediction
-grid <- rasterToPoints(aggregate(landDEM, fact=200)) #fact=25))
+grid <- rasterToPoints(aggregate(landDEM, fact=20))
 grid <- grid[,1:2]
 grid <- SpatialPointsDataFrame(grid,data.frame(elev=extract(raster(DEM),grid)))
 #grid$elev <- extract(raster(DEM), grid)
