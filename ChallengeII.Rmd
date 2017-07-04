@@ -600,7 +600,7 @@ remove(p1, p2)
 ## Interpolation
 ```{r new grid, eval=TRUE, echo=FALSE, warnings=FALSE, fig.align="center"}
 # Set up grid, for prediction
-grid <- rasterToPoints(aggregate(landDEM, fact=200)) #, fact=20))
+grid <- rasterToPoints(aggregate(landDEM, fact=18)) #, fact=200))
 grid <- grid[,1:2]
 grid <- SpatialPointsDataFrame(grid,data.frame(elev=extract(landDEM,grid)))
 grid$cont <- extract(ocean.dist, grid)
