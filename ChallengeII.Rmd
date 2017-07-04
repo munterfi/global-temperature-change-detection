@@ -1,5 +1,5 @@
 ---
-title: 'Global surface temperature change detection (before 1970 - after 1990)'
+title: 'Global surface temperature change detection: Differences between the long-term mean of 1950-1970 and 1990-2010'
 author:
 - "Merlin Unterfinger, Geography UZH"
 - "Olivier Niklaus, Geography UZH"
@@ -13,7 +13,7 @@ output:
     toc: yes
     toc_depth: 3
   html_document: default
-abstract: "Spatial continuity of global temperature point measurements is analysed by creating H-Scatterplots, autocovariance plots and variograms. Universal Kriging is applied to interpolate global temperature maps from point measurements. Global layers of elevation, sun incidence angle, atmospheric distance and continentality are created and used in the Universal Kriging as explaining variables. Afterwards difference images are calculated and interpreted."
+abstract: "Spatial continuity of global temperature point measurements is analysed by creating H-scatterplots, autocovariance plots and variograms. Universal Kriging is applied to interpolate global temperature maps from the point measurements. Global layers of elevation, sun inclination angle, atmospheric distance and continentality are created and used in the Universal Kriging as explaining variables. Afterwards difference images are calculated and interpreted."
 filter: pandoc-eqnos
 ---
 
@@ -470,6 +470,7 @@ invisible(dev.off())
 
 ```
 
+\newpage
 ## Surface gradient (North-South)
 ```{r gradient, eval=TRUE, echo=FALSE,  warnings=FALSE, message=FALSE, fig.align="center"}
 # Create latitude and longitude layers
@@ -481,31 +482,48 @@ lat[] <- coordinates(raster(DEM))[, 2]
 slope <- terrain(landDEM, opt='slope', unit='radians')
 aspect <- terrain(landDEM, opt='aspect', unit='radians')
 
-# Split the hemispheres
-split.hemi <- setValues(lat, 1)
-split.hemi[1:(nrow(lat)/2), 1:ncol(lat)] <- -1
+# Winter
+aPer <- (180/2+23)/180
+split.hemi.w <- setValues(lat, 1)
+split.hemi.w[1:floor((nrow(lat)*aPer)), 1:ncol(lat)] <- -1
+
+# Summer
+aPer <- (180/2-23)/180
+split.hemi.s <- setValues(lat, 1)
+split.hemi.s[1:floor((nrow(lat)*aPer)), 1:ncol(lat)] <- -1
 
 # Calculate the gradient in latitude direction
 latGrad <- (cos(aspect)*slope)*180/pi
-latGrad <- latGrad*split.hemi
+latGrad.w <- latGrad*split.hemi.w
+latGrad.s <- latGrad*split.hemi.s
 
 # Plot
-p <- levelplot(latGrad,
-          main = "Latitude gradient, hemisphere corrected",
+p1 <- levelplot(latGrad.w,
+          main = "North-South gradient, +23.5° hemisphere corrected",
           par.settings=BuRdTheme(), margin=F, 
-          at=seq(-maxValue(abs(latGrad)), maxValue(abs(latGrad)), len=100)) + 
+          at=seq(-maxValue(abs(latGrad.w)), maxValue(abs(latGrad.w)), len=100)) + 
   layer(sp.polygons(oceans, fill='transparent', alpha=1))
-print(p)
+print(p1)
+
+p2 <- levelplot(latGrad.s,
+          main = "North-South gradient, -23.5° hemisphere corrected",
+          par.settings=BuRdTheme(), margin=F, 
+          at=seq(-maxValue(abs(latGrad.s)), maxValue(abs(latGrad.s)), len=100)) + 
+  layer(sp.polygons(oceans, fill='transparent', alpha=1))
+print(p1)
 
 # Save plots
-pdf(file.path(figureFolder, "gradient_hemiCorr.pdf"), width=10.5, height=7.5)
-print(p)
+pdf(file.path(figureFolder, "gradient_WiHemiCorr.pdf"), width=10.5, height=7.5)
+print(p1)
+invisible(dev.off())
+
+pdf(file.path(figureFolder, "gradient_SuHemiCorr.pdf"), width=10.5, height=7.5)
+print(p2)
 invisible(dev.off())
 
 # Clear plots
-remove(p)
+remove(p1, p2)
 ```
-\newpage
 
 ## Sun inclination angle
 ```{r inclination, eval=TRUE, echo=FALSE,  warnings=FALSE, message=FALSE, fig.align="center"}
@@ -513,8 +531,8 @@ remove(p)
 # http://www.geoastro.de/astro/mittag/index.htm; h = 90° - β + δ
 # Substract ghradient northern hemisphere and add to the southern
 # 21.6 - "Summer"; +23.5°
-h.w <- (90-abs(lat + 23.5)+latGrad)
-h.s <- 90-abs(lat - 23.5)+latGrad
+h.w <- (90-abs(lat + 23.5)+latGrad.w)
+h.s <- (90-abs(lat - 23.5)+latGrad.s)
 
 # Plot
 p1 <- levelplot(h.w,
@@ -797,9 +815,9 @@ temp1970s$elev <- extract(landDEM, temp1970s)
 temp1970s$elev[is.na(temp1970s$elev)] <- 0
 temp1970s$cont <- extract(ocean.dist, temp1970s)
 temp1970s$cont[is.na(temp1970s$cont)] <- 0
-temp1970s$hsun <- extract(h.w, temp1970s)
+temp1970s$hsun <- extract(h.s, temp1970s)
 temp1970s$hsun[is.na(temp1970s$hsun)] <- 0
-temp1970s$dist <- extract(atmo.dist.w, temp1970s)
+temp1970s$dist <- extract(atmo.dist.s, temp1970s)
 temp1970s$dist[is.na(temp1970s$dist)] <- 0
 
 # Linear Regression
@@ -889,9 +907,9 @@ temp2010s$elev <- extract(landDEM, temp2010s)
 temp2010s$elev[is.na(temp2010s$elev)] <- 0
 temp2010s$cont <- extract(ocean.dist, temp2010s)
 temp2010s$cont[is.na(temp2010s$cont)] <- 0
-temp2010s$hsun <- extract(h.w, temp2010s)
+temp2010s$hsun <- extract(h.s, temp2010s)
 temp2010s$hsun[is.na(temp2010s$hsun)] <- 0
-temp2010s$dist <- extract(atmo.dist.w, temp2010s)
+temp2010s$dist <- extract(atmo.dist.s, temp2010s)
 temp2010s$dist[is.na(temp2010s$dist)] <- 0
 
 # Linear Regression
@@ -984,7 +1002,7 @@ diff.w <- temp2010w.uok.pred-temp1970w.uok.pred
 
 # Plot
 p <- levelplot(diff.w,
-          main = "Temperature change: Winter (before 1970 - after 1990)",
+          main = "Temperature change: Winter",
           par.settings=BuRdTheme(), margin=F, 
           at=seq(-maxValue(abs(diff.w)), maxValue(abs(diff.w)), len=100)) + 
   layer(sp.polygons(oceans, fill='transparent'))
@@ -998,6 +1016,7 @@ invisible(dev.off())
 # Clear plots
 remove(p)
 
+# Save raster
 writeRaster(diff.w, file.path(resultsFolder, "diff_winter"), format = "GTiff", overwrite=TRUE)
 ```
 
@@ -1007,7 +1026,7 @@ diff.s <- temp2010s.uok.pred-temp1970s.uok.pred
 
 # Plot
 p <- levelplot(diff.s,
-          main = "Temperature change: Summer (before 1970 - after 1990)",
+          main = "Temperature change: Summer",
           par.settings=BuRdTheme(), margin=F, 
           at=seq(-maxValue(abs(diff.s)), maxValue(abs(diff.s)), len=100)) + 
   layer(sp.polygons(oceans, fill='transparent'))
@@ -1021,5 +1040,6 @@ invisible(dev.off())
 # Clear plots
 remove(p)
 
+# Save raster
 writeRaster(diff.s, file.path(resultsFolder, "diff_summer"), format = "GTiff", overwrite=TRUE)
 ```
