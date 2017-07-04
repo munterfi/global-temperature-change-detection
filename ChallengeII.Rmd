@@ -3,7 +3,7 @@ title: 'Challenge II: Spatial continuity and weather prediction'
 author:
 - "Olivier Niklaus, Geography UZH"
 - "Merlin Unterfinger, Geography UZH"
-date: 25 6 2017
+date: 4 7 2017
 output:
   rmarkdown::pdf_document:
     fig_caption: yes        
