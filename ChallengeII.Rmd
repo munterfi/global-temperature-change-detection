@@ -25,7 +25,7 @@ options(scipen=6)         # Display digits, not the scientific version
 options(digits.secs=6)    # use milliseconds in Date/Time data types
 options(warning=FALSE)    # Don't show warnings
 par(mfrow=c(1,1))         # reset plot placement to normal 1 by 1
-maxpixels <- 1000000
+maxpixels <- 101250 #720000       # Plot resolution
 
 dataFolder    <- file.path(getwd(), "data")            # Data folder
 resultsFolder <- file.path(getwd(), "results")         # Result folder
@@ -98,7 +98,8 @@ grid <- spsample(DEM,type="regular",100)
 
 # Downsize
 DEM <- raster(DEM)
-DEM <- aggregate(DEM, fact=5.5)
+#DEM <- aggregate(DEM, fact=5.5)
+DEM <- aggregate(DEM, fact=16)
 
 # Extract all only land
 landDEM <- DEM
@@ -617,13 +618,11 @@ remove(p1, p2)
 ```{r new grid, eval=TRUE, echo=FALSE, warnings=FALSE, fig.align="center"}
 # Set up grid, for prediction
 remove(grid)
-#grid <- rasterToPoints(aggregate(landDEM, fact=200)) #, fact=18))
-grid <- rasterToPoints(aggregate(landDEM, fact=30))
-#grid <- rasterToPoints(landDEM)
+#grid <- rasterToPoints(aggregate(landDEM, fact=30))
+grid <- rasterToPoints(landDEM)
 grid <- grid[,1:2]
 grid <- SpatialPointsDataFrame(grid,data.frame(elev=extract(landDEM,grid)))
 grid$cont <- extract(ocean.dist, grid)
-grid$grad <- extract(latGrad.w, grid)
 grid$hsun <- extract(h.w, grid)
 grid$dist <- extract(atmo.dist.w, grid)
 
