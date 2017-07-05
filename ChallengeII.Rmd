@@ -3,7 +3,7 @@ title: 'Global surface temperature change detection: Differences between the lon
 author:
 - "Merlin Unterfinger, Geography UZH"
 - "Olivier Niklaus, Geography UZH"
-date: 4 7 2017
+date: 5 7 2017
 output:
   rmarkdown::pdf_document:
     fig_caption: yes        
@@ -25,6 +25,7 @@ options(scipen=6)         # Display digits, not the scientific version
 options(digits.secs=6)    # use milliseconds in Date/Time data types
 options(warning=FALSE)    # Don't show warnings
 par(mfrow=c(1,1))         # reset plot placement to normal 1 by 1
+maxpixels <- 1000000
 
 dataFolder    <- file.path(getwd(), "data")            # Data folder
 resultsFolder <- file.path(getwd(), "results")         # Result folder
@@ -91,22 +92,31 @@ colnames(temp2010w@data) <- col
 
 # Open digital elevation model
 DEM <-readGDAL(file.path(dataFolder, "globalDHM.tif"), silent = T)
-#plot(DEM, col=topo.colors(20))
-landDEM <- raster(DEM)
-landDEM[landDEM<0] <- 0
 
 # Set up grid, for prediction
 grid <- spsample(DEM,type="regular",100)
+
+# Downsize
+DEM <- raster(DEM)
+DEM <- aggregate(DEM, fact=5.5)
+
+# Extract all only land
+landDEM <- DEM
+landDEM[landDEM<0] <- 0
+grid <- SpatialPointsDataFrame(grid@coords,data.frame(elevation=extract(landDEM,grid)))
+
+# Assign elevation to grid for prediction
 grid <- SpatialPointsDataFrame(grid@coords,data.frame(elevation=extract(landDEM,grid)))
 
 # Load coastlines for plotting
 oceans <- readOGR(dsn="data", "ne_110m_ocean", verbose=F)
 
 # Plot
-p <- levelplot(raster(DEM),
+p <- levelplot(DEM,
           main = "DEM",
+          maxpixels = maxpixels,
           par.settings=rasterTheme(region = dichromat(topo.colors(7))), margin=F,
-          at=seq(-maxValue(abs(raster(DEM))), maxValue(abs(raster(DEM))), len=100)) + 
+          at=seq(-maxValue(abs(DEM)), maxValue(abs(DEM)), len=100)) + 
   layer(sp.polygons(oceans, fill='transparent'))
 print(p)
 
@@ -286,9 +296,9 @@ grid.arrange(plot(temp1970w.var10, main="Bin width 10km"),
              plot(temp1970w.var15, main="Bin width 15km"), ncol = 2)
 
 bws<-data.frame(np=temp1970w.var1$np,bw=rep("1km",length(temp1970w.var1$np)))
-bws<-rbind(bws,data.frame(np=temp1970w.var5$np,bw=rep("10km",length(temp1970w.var5$np))))
-bws<-rbind(bws,data.frame(np=temp1970w.var10$np,bw=rep("20km",length(temp1970w.var10$np))))
-bws<-rbind(bws,data.frame(np=temp1970w.var15$np,bw=rep("30km",length(temp1970w.var15$np))))
+bws<-rbind(bws,data.frame(np=temp1970w.var5$np,bw=rep("5km",length(temp1970w.var5$np))))
+bws<-rbind(bws,data.frame(np=temp1970w.var10$np,bw=rep("10km",length(temp1970w.var10$np))))
+bws<-rbind(bws,data.frame(np=temp1970w.var15$np,bw=rep("15km",length(temp1970w.var15$np))))
 
 #plotting the numbers of points per bin and bandwidth as a boxplot
 ggplot(bws, aes(x=bw, y=np, color=bw)) +
@@ -310,9 +320,9 @@ grid.arrange(plot(temp2010w.var10, main="Bin width 10km"),
              plot(temp2010w.var15, main="Bin width 15km"), ncol = 2)
 
 bws<-data.frame(np=temp2010w.var1$np,bw=rep("1km",length(temp2010w.var1$np)))
-bws<-rbind(bws,data.frame(np=temp2010w.var5$np,bw=rep("10km",length(temp2010w.var5$np))))
-bws<-rbind(bws,data.frame(np=temp2010w.var10$np,bw=rep("20km",length(temp2010w.var10$np))))
-bws<-rbind(bws,data.frame(np=temp2010w.var15$np,bw=rep("30km",length(temp2010w.var15$np))))
+bws<-rbind(bws,data.frame(np=temp2010w.var5$np,bw=rep("5km",length(temp2010w.var5$np))))
+bws<-rbind(bws,data.frame(np=temp2010w.var10$np,bw=rep("10km",length(temp2010w.var10$np))))
+bws<-rbind(bws,data.frame(np=temp2010w.var15$np,bw=rep("15km",length(temp2010w.var15$np))))
 
 #plotting the numbers of points per bin and bandwidth as a boxplot
 ggplot(bws, aes(x=bw, y=np, color=bw)) +
@@ -334,9 +344,9 @@ grid.arrange(plot(temp1970s.var10, main="Bin width 10km"),
              plot(temp1970s.var15, main="Bin width 15km"), ncol = 2)
 
 bws<-data.frame(np=temp1970s.var1$np,bw=rep("1km",length(temp1970s.var1$np)))
-bws<-rbind(bws,data.frame(np=temp1970s.var5$np,bw=rep("10km",length(temp1970s.var5$np))))
-bws<-rbind(bws,data.frame(np=temp1970s.var10$np,bw=rep("20km",length(temp1970s.var10$np))))
-bws<-rbind(bws,data.frame(np=temp1970s.var15$np,bw=rep("30km",length(temp1970s.var15$np))))
+bws<-rbind(bws,data.frame(np=temp1970s.var5$np,bw=rep("5km",length(temp1970s.var5$np))))
+bws<-rbind(bws,data.frame(np=temp1970s.var10$np,bw=rep("10km",length(temp1970s.var10$np))))
+bws<-rbind(bws,data.frame(np=temp1970s.var15$np,bw=rep("15km",length(temp1970s.var15$np))))
 
 #plotting the numbers of points per bin and bandwidth as a boxplot
 ggplot(bws, aes(x=bw, y=np, color=bw)) +
@@ -358,9 +368,9 @@ grid.arrange(plot(temp2010s.var10, main="Bin width 10km"),
              plot(temp2010s.var15, main="Bin width 15km"), ncol = 2)
 
 bws<-data.frame(np=temp2010s.var1$np,bw=rep("1km",length(temp2010s.var1$np)))
-bws<-rbind(bws,data.frame(np=temp2010s.var5$np,bw=rep("10km",length(temp2010s.var5$np))))
-bws<-rbind(bws,data.frame(np=temp2010s.var10$np,bw=rep("20km",length(temp2010s.var10$np))))
-bws<-rbind(bws,data.frame(np=temp2010s.var15$np,bw=rep("30km",length(temp2010s.var15$np))))
+bws<-rbind(bws,data.frame(np=temp2010s.var5$np,bw=rep("5km",length(temp2010s.var5$np))))
+bws<-rbind(bws,data.frame(np=temp2010s.var10$np,bw=rep("10km",length(temp2010s.var10$np))))
+bws<-rbind(bws,data.frame(np=temp2010s.var15$np,bw=rep("15km",length(temp2010s.var15$np))))
 
 #plotting the numbers of points per bin and bandwidth as a boxplot
 ggplot(bws, aes(x=bw, y=np, color=bw)) +
@@ -435,9 +445,9 @@ oceans.simply <-SpatialPolygonsDataFrame(
   data=oceans.50m@data)
 
 # Build blank raster
-r <- raster(DEM)
+r <- DEM
 r <- setValues(r, 0)
-r <- aggregate(r, fact=10)
+#r <- aggregate(r, fact=10)
 
 # Make values NA where polygon intesects raster
 r <- mask(r, oceans.simply)
@@ -453,30 +463,30 @@ ocean.dist <- distance(r)
 # # much faster...
 # rDB <- distance(rB)
 
-levelplot(ocean.dist,
+# Plot
+p <- levelplot(ocean.dist,
           main = "Continentality",
+          maxpixels = maxpixels,
           par.settings=YlOrRdTheme(), margin=F, 
           at=seq(0, max(abs(cellStats(ocean.dist, range))), len=100)) + 
   layer(sp.polygons(oceans, fill='black', alpha=1))
+print(p)
 
-
+# Save plot
 pdf(file.path(figureFolder, "Continentality.pdf"), width=10.5, height=7.5)
-levelplot(ocean.dist,
-          main = "continentality",
-          par.settings=YlOrRdTheme(), margin=F, 
-          at=seq(0, max(abs(cellStats(ocean.dist, range))), len=100)) + 
-  layer(sp.polygons(oceans, fill='black', alpha=1))
+print(p)
 invisible(dev.off())
 
+# Remove plot
+remove(p)
 ```
 
 \newpage
 ## Surface gradient (North-South)
 ```{r gradient, eval=TRUE, echo=FALSE,  warnings=FALSE, message=FALSE, fig.align="center"}
 # Create latitude and longitude layers
-lon <- lat <- raster(DEM)
-lon[] <- coordinates(raster(DEM))[, 1]
-lat[] <- coordinates(raster(DEM))[, 2]
+lat <- DEM
+lat[] <- coordinates(DEM)[, 2]
 
 # Slope and aspect
 slope <- terrain(landDEM, opt='slope', unit='radians')
@@ -500,6 +510,7 @@ latGrad.s <- latGrad*split.hemi.s
 # Plot
 p1 <- levelplot(latGrad.w,
           main = "North-South gradient, +23.5° hemisphere corrected",
+          maxpixels = maxpixels,
           par.settings=BuRdTheme(), margin=F, 
           at=seq(-maxValue(abs(latGrad.w)), maxValue(abs(latGrad.w)), len=100)) + 
   layer(sp.polygons(oceans, fill='transparent', alpha=1))
@@ -507,6 +518,7 @@ print(p1)
 
 p2 <- levelplot(latGrad.s,
           main = "North-South gradient, -23.5° hemisphere corrected",
+          maxpixels = maxpixels,
           par.settings=BuRdTheme(), margin=F, 
           at=seq(-maxValue(abs(latGrad.s)), maxValue(abs(latGrad.s)), len=100)) + 
   layer(sp.polygons(oceans, fill='transparent', alpha=1))
@@ -537,6 +549,7 @@ h.s <- (90-abs(lat - 23.5)+latGrad.s)
 # Plot
 p1 <- levelplot(h.w,
           main = "Inclination angle sun, winter",
+          maxpixels = maxpixels,
           par.settings=BuRdTheme(), margin=F, 
           at=seq(-maxValue(abs(h.w)), maxValue(abs(h.w)), len=100)) + 
   layer(sp.polygons(oceans, fill='blue', alpha=0.1))
@@ -544,6 +557,7 @@ print(p1)
 
 p2 <- levelplot(h.s,
           main = "Inclination angle sun, summer",
+          maxpixels = maxpixels,
           par.settings=BuRdTheme(), margin=F, 
           at=seq(-maxValue(abs(h.w)), maxValue(abs(h.w)), len=100)) + 
   layer(sp.polygons(oceans, fill='blue', alpha=0.1))
@@ -572,6 +586,7 @@ atmo.dist.s <- 1-cos(lat.s.rad)
 # Plot
 p1 <- levelplot(atmo.dist.w,
           main = "Atmospheric distance, winter",
+          maxpixels = maxpixels,
           par.settings=BuRdTheme(), margin=T, 
           at=seq(-maxValue(abs(atmo.dist.w)), maxValue(abs(atmo.dist.w)), len=100)) + 
   layer(sp.polygons(oceans, fill='blue', alpha=0.1))
@@ -579,6 +594,7 @@ suppressWarnings(print(p1))
 
 p2 <- levelplot(atmo.dist.s,
           main = "Atmospheric distance, summer",
+          maxpixels = maxpixels,
           par.settings=BuRdTheme(), margin=T, 
           at=seq(-maxValue(abs(atmo.dist.s)), maxValue(abs(atmo.dist.s)), len=100)) + 
   layer(sp.polygons(oceans, fill='blue', alpha=0.1))
@@ -600,10 +616,14 @@ remove(p1, p2)
 ## Interpolation
 ```{r new grid, eval=TRUE, echo=FALSE, warnings=FALSE, fig.align="center"}
 # Set up grid, for prediction
-grid <- rasterToPoints(aggregate(landDEM, fact=18)) #, fact=200))
+remove(grid)
+#grid <- rasterToPoints(aggregate(landDEM, fact=200)) #, fact=18))
+grid <- rasterToPoints(aggregate(landDEM, fact=30))
+#grid <- rasterToPoints(landDEM)
 grid <- grid[,1:2]
 grid <- SpatialPointsDataFrame(grid,data.frame(elev=extract(landDEM,grid)))
 grid$cont <- extract(ocean.dist, grid)
+grid$grad <- extract(latGrad.w, grid)
 grid$hsun <- extract(h.w, grid)
 grid$dist <- extract(atmo.dist.w, grid)
 
@@ -676,6 +696,7 @@ paste("Observed RMSE (5% validation data): ", round(RMSE(temp.val$meanWi_before1
 # Plot
 p1 <- levelplot(temp1970w.uok.pred,
           main = "Prediction: Winter before 1970",
+          maxpixels = maxpixels,
           par.settings=BuRdTheme(), margin=F, 
           at=seq(-maxValue(abs(temp1970w.uok.pred)), maxValue(abs(temp1970w.uok.pred)), len=100)) + 
   layer(sp.polygons(oceans, fill='transparent'))
@@ -683,6 +704,7 @@ print(p1)
 
 p2 <- levelplot(temp1970w.uok.var,
           main = "Uncertainty: Winter before 1970",
+          maxpixels = maxpixels,
           par.settings=YlOrRdTheme(), margin=F, 
           at=seq(0, maxValue(abs(temp1970w.uok.var)), len=100)) + 
   layer(sp.polygons(oceans, fill='transparent'))
@@ -774,6 +796,7 @@ paste("Observed RMSE (5% validation data): ", round(RMSE(temp.val$meanWi_after19
 # Plot
 p1 <- levelplot(temp2010w.uok.pred,
           main = "Prediction: Winter after 1990",
+          maxpixels = maxpixels,
           par.settings=BuRdTheme(), margin=F, 
           at=seq(-maxValue(abs(temp2010w.uok.pred)), maxValue(abs(temp2010w.uok.pred)), len=100)) + 
   layer(sp.polygons(oceans, fill='transparent'))
@@ -781,6 +804,7 @@ print(p1)
 
 p2 <- levelplot(temp2010w.uok.var,
           main = "Uncertainty: Winter after 1990",
+          maxpixels = maxpixels,
           par.settings=YlOrRdTheme(), margin=F, 
           at=seq(0, maxValue(abs(temp2010w.uok.var)), len=100)) + 
   layer(sp.polygons(oceans, fill='transparent'))
@@ -870,6 +894,7 @@ paste("Observed RMSE (5% validation data): ", round(RMSE(temp.val$meanSu_before1
 # Plot
 p1 <- levelplot(temp1970s.uok.pred,
           main = "Prediction: Summer before 1970",
+          maxpixels = maxpixels,
           par.settings=BuRdTheme(), margin=F, 
           at=seq(-maxValue(abs(temp1970s.uok.pred)), maxValue(abs(temp1970s.uok.pred)), len=100)) + 
   layer(sp.polygons(oceans, fill='transparent'))
@@ -877,6 +902,7 @@ print(p1)
 
 p2 <- levelplot(temp1970s.uok.var,
           main = "Uncertainty: Summer before 1970",
+          maxpixels = maxpixels,
           par.settings=YlOrRdTheme(), margin=F, 
           at=seq(0, maxValue(abs(temp1970s.uok.var)), len=100)) + 
   layer(sp.polygons(oceans, fill='transparent'))
@@ -962,6 +988,7 @@ paste("Observed RMSE (5% validation data): ", round(RMSE(temp.val$meanSu_after19
 # Plot
 p1 <- levelplot(temp2010s.uok.pred,
           main = "Prediction: Summer after 1990",
+          maxpixels = maxpixels,
           par.settings=BuRdTheme(), margin=F, 
           at=seq(-maxValue(abs(temp2010s.uok.pred)), maxValue(abs(temp2010s.uok.pred)), len=100)) + 
   layer(sp.polygons(oceans, fill='transparent'))
@@ -969,6 +996,7 @@ print(p1)
 
 p2 <- levelplot(temp2010s.uok.var,
           main = "Uncertainty: Summer after 1990",
+          maxpixels = maxpixels,
           par.settings=YlOrRdTheme(), margin=F, 
           at=seq(0, maxValue(abs(temp2010s.uok.var)), len=100)) + 
   layer(sp.polygons(oceans, fill='transparent'))
@@ -1003,6 +1031,7 @@ diff.w <- temp2010w.uok.pred-temp1970w.uok.pred
 # Plot
 p <- levelplot(diff.w,
           main = "Temperature change: Winter",
+          maxpixels = maxpixels,
           par.settings=BuRdTheme(), margin=F, 
           at=seq(-maxValue(abs(diff.w)), maxValue(abs(diff.w)), len=100)) + 
   layer(sp.polygons(oceans, fill='transparent'))
@@ -1027,6 +1056,7 @@ diff.s <- temp2010s.uok.pred-temp1970s.uok.pred
 # Plot
 p <- levelplot(diff.s,
           main = "Temperature change: Summer",
+          maxpixels = maxpixels,
           par.settings=BuRdTheme(), margin=F, 
           at=seq(-maxValue(abs(diff.s)), maxValue(abs(diff.s)), len=100)) + 
   layer(sp.polygons(oceans, fill='transparent'))
