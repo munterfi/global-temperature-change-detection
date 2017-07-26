@@ -1,6 +1,11 @@
-# Interpolating Global Temperature
+# Change detection in global temperature
 
-blabla
+Global warming is considered as a major issue for the further development of the conditions for living organisms on the Earth. In the northern Hemisphere, the warmest 30-year period of the last 1400 years was registered. Globally, the last three decades have been successively warmer than any preceding decade since 1850 (IPCC 2013). In this context, we argue that it is crucial to develop a better understanding of global warming. Since more insights open possibilities to react and adapt to global warming and its implications. By considering the earth system's dynamical complexity, it is unsurprising that global warming is not a spatially even distributed phenomenon, which results in spatial regions that are more affected than others.
+
+Therefore, global surface temperature layers are interpolated for two time intervals (1950-1970 & 1990-2010) based on a point measurement data set of the worldwide surface temperature that has been recorded since 1950. For the spatial interpolation, an universal Kriging approach is applied with additional layers for the continentality, the atmospheric distance, the North-South topographic gradient and the sun inclination angle of every pixel. Finally two (summer & winter) difference images are created from the interpolated temperature layers to represent the change in temperature.
+
+|![Screen01](results/diff_summer.pdf) | ![Screen02](results/diff_winter.pdf)|
+|---|---|
 
 ## Installation
 
