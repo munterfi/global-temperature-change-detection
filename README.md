@@ -4,7 +4,7 @@ Global warming is considered as a major issue for the further development of the
 
 Therefore, global surface temperature layers are interpolated for two time intervals (1950-1970 & 1990-2010) based on a point measurement data set of the worldwide surface temperature that has been recorded since 1950. For the spatial interpolation, an universal Kriging approach is applied with additional layers for the continentality, the atmospheric distance, the North-South topographic gradient and the sun inclination angle of every pixel. Finally two (summer & winter) difference images are created from the interpolated temperature layers to represent the change in temperature.
 
-|![Screen01](results/diff_summer.pdf) | ![Screen02](results/diff_winter.pdf)|
+|![Screen01](results/diff_summer.tif) | ![Screen02](results/diff_winter.tif)|
 |---|---|
 
 ## Installation
