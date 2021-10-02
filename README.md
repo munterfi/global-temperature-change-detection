@@ -23,7 +23,7 @@ Global surface temperature layers are interpolated for two time intervals (1950-
 
 ## Authors
 
-* **Merlin Unterfinger** - *Development and implementation* - [munterfinger](https://github.com/munterfinger)
+* **Merlin Unterfinger** - *Development and implementation* - [munterfi](https://github.com/munterfi)
 * **Olivier Niklaus** - *Development and implementation*
 
 ## Built With
@@ -36,10 +36,11 @@ Global surface temperature layers are interpolated for two time intervals (1950-
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
 
 ## References
+
 Hansen, J., Ruedy, R., Sato, M., & Lo, K., 2010. Global surface temperature change. Review of Geophysics, 48, pp.1–29.
 
 Haylock, M. R., Hofstra, N., Klein Tank, A. M. G., Klok, E. J., Jones, P. D., & New, M. (2008). A European daily high-resolution gridded data set of surface temperature and precipitation for 1950–2006. Journal of Geophysical Research, pp.1–12.
 
-IPCC, 2013. Summary fo Policymakers. Climate Change 2013: The Physical Science Basis.Contribution of Working Group I to the Fifth Assessment Report of the Intergovernmental Panel on Climate Change, pp.1–28.
+IPCC, 2013. Summary fo Policymakers. Climate Change 2013: The Physical Science Basis. Contribution of Working Group I to the Fifth Assessment Report of the Intergovernmental Panel on Climate Change, pp.1–28.
 
 Pebesma, E. J. (2004). Multivariable geostatistics in S: The gstat package. Computers and Geosciences, 30(7), pp.683–691.
